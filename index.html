@@ -127,7 +127,9 @@ const now = () => new Date(Date.now() + skew);
 // الأذان: المتصفح قد يمنع الصوت حتى أول ضغطة زر، فنجرّب بصوت شبه صامت ونطلب ضغطة OK إن رُفض
 // لكل صلاة مؤذنها؛ أذان الفجر فيه «الصلاة خير من النوم»
 const adhanSrc = k => `assets/adhan/${k.toLowerCase()}.mp3`;
-const adhan = new Audio(adhanSrc('Maghrib')); adhan.preload = 'auto';
+const silent = params.get('sound') === '0';   // ?sound=0: تنبيه ذهبي فقط، والأذان من تطبيق آخر (Al-Azan)
+const adhan = silent ? null : new Audio(adhanSrc('Maghrib'));   // في الوضع الصامت لا عنصر صوت أصلًا
+if (adhan) adhan.preload = 'auto';
 let soundOk = false; const played = new Set();
 async function unlockSound() {
   let why = '';
@@ -139,7 +141,6 @@ async function unlockSound() {
   u.dataset.why = why;   // يظهر سبب الرفض بخط صغير، للتشخيص
 }
 let unlocking = null;   // محاولة واحدة في كل مرة، وإلا ألغت محاولةٌ أختها (AbortError)
-const silent = params.get('sound') === '0';   // ?sound=0: تنبيه ذهبي فقط، والأذان من تطبيق آخر (Al-Azan)
 const tryUnlock = () => { if (!silent && !soundOk && !unlocking) unlocking = unlockSound().finally(() => unlocking = null); };
 for (const ev of ['keydown', 'keyup', 'click', 'pointerdown']) addEventListener(ev, tryUnlock, true);
 
