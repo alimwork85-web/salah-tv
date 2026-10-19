@@ -51,7 +51,17 @@ adb shell am start -a android.intent.action.VIEW -d "https://alimwork85-web.gith
 
 - أوقات الصلاة: [Aladhan API](https://aladhan.com/prayer-times-api) — `method=2` (ISNA).
 - الطقس: [Open-Meteo](https://open-meteo.com/) — مجاني ولا يحتاج مفتاحًا.
-- الأذان: [The Adhan – Aaqib Azeez](https://commons.wikimedia.org/wiki/File:The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3)، بصوت Aaqib Azeez وبرفع Atcovi، من Wikimedia Commons. رخصته [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)، والملف `assets/adhan.mp3` يبقى تحت هذه الرخصة نفسها.
+- الأذان، لكل صلاة مؤذنها، والتسجيلات كلها من Wikimedia Commons:
+
+  | الصلاة | الملف | المصدر | الرخصة |
+  |---|---|---|---|
+  | الفجر | `assets/adhan/fajr.mp3` | [Besim Azemi — Islamic Center Malmö](https://commons.wikimedia.org/wiki/File:Eid_al-Fitr_Fajr_azan_at_Malm%C3%B6_Mosque_-_19_August_2012.webm) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+  | الظهر | `assets/adhan/dhuhr.mp3` | [Adhan, Great Mosque of Mecca — Seyfula Islam](https://commons.wikimedia.org/wiki/File:Adhan,_Great_Mosque_of_Mecca_-_Jan_21,_2013.webm) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+  | العصر | `assets/adhan/asr.mp3` | [Call to prayer from the Prophet's Mosque — ejaz215 (freesound)](https://commons.wikimedia.org/wiki/File:33937_ejaz215_call-to-prayer-from-the-prophet-s-mo.ogg) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+  | المغرب | `assets/adhan/maghrib.mp3` | [The Adhan — Aaqib Azeez، برفع Atcovi](https://commons.wikimedia.org/wiki/File:The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+  | العشاء | `assets/adhan/isha.mp3` | [Azan — Andrewler](https://commons.wikimedia.org/wiki/File:Azan.ogg) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+
+  حُوّلت التسجيلات إلى MP3 أحادي القناة دون أي تعديل آخر. وتبقى ملفات الصوت تحت رخصها الأصلية، لا تحت رخصة MIT الخاصة بالكود.
 
 لا تجمع الصفحة أي بيانات عن المستخدم، ولا تستخدم كوكيز.
 

@@ -123,7 +123,9 @@ const skew = at ? (() => { const d = new Date(); d.setHours(+at[1], +at[2], 0, 0
 const now = () => new Date(Date.now() + skew);
 
 // الأذان: المتصفح قد يمنع الصوت حتى أول ضغطة زر، فنجرّب بصوت شبه صامت ونطلب ضغطة OK إن رُفض
-const adhan = new Audio('assets/adhan.mp3'); adhan.preload = 'auto';
+// لكل صلاة مؤذنها؛ أذان الفجر فيه «الصلاة خير من النوم»
+const adhanSrc = k => `assets/adhan/${k.toLowerCase()}.mp3`;
+const adhan = new Audio(adhanSrc('Maghrib')); adhan.preload = 'auto';
 let soundOk = false; const played = new Set();
 async function unlockSound() {
   try { adhan.volume = 0.001; await adhan.play(); adhan.pause(); adhan.currentTime = 0; adhan.volume = 1; soundOk = true; }
@@ -147,6 +149,7 @@ const count = (n, one, two, few) => n === 0 ? '' : n === 1 ? one : n === 2 ? two
   console.assert(nextPrayer(t, 0, true).k === 'Imsak' && nextPrayer(t, 0, true).left === 290, 'ramadan: imsak first');
   console.assert(nextPrayer(t, 20 * 60, true).k === 'Imsak' && nextPrayer(t, 20 * 60, true).left === 530, 'ramadan: after isha -> imsak');
   console.assert(prayerNow(t, 12 * 60) === 'Dhuhr' && prayerNow(t, 12 * 60 + 14) === 'Dhuhr' && prayerNow(t, 12 * 60 + 15) === null, 'gold window');
+  console.assert(adhanSrc('Fajr') === 'assets/adhan/fajr.mp3' && adhanSrc('Isha') === 'assets/adhan/isha.mp3', 'adhan per prayer');
   console.assert(prayerNow(t, 4 * 60 + 50) === null && prayerNow(t, 11 * 60 + 59) === null, 'no gold for imsak / before time'); })();
 
 async function loadPrayers() {
@@ -196,7 +199,7 @@ function render() {
   if (cur) {
     cd.textContent = ramadan && cur === 'Maghrib' ? 'حان الآن وقت الإفطار · صلاة المغرب' : `حان الآن وقت صلاة ${NAMES[cur]}`;
     const id = `${d.toDateString()} ${cur}`;   // مرة واحدة لكل صلاة، في دقيقة دخول الوقت فقط
-    if (mins(times[cur]) === nowMin && !played.has(id)) { played.add(id); if (soundOk) { adhan.currentTime = 0; adhan.play().catch(() => {}); } }
+    if (mins(times[cur]) === nowMin && !played.has(id)) { played.add(id); if (soundOk) { adhan.src = adhanSrc(cur); adhan.play().catch(() => {}); } }
   } else {
     const what = ramadan && n.k === 'Maghrib' ? 'الإفطار' : NAMES[n.k];
     const hh = count(Math.floor(n.left / 60), 'ساعة', 'ساعتان', 'ساعات'), mm = count(n.left % 60, 'دقيقة', 'دقيقتان', 'دقائق');
