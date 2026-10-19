@@ -139,7 +139,8 @@ async function unlockSound() {
   u.dataset.why = why;   // يظهر سبب الرفض بخط صغير، للتشخيص
 }
 let unlocking = null;   // محاولة واحدة في كل مرة، وإلا ألغت محاولةٌ أختها (AbortError)
-const tryUnlock = () => { if (!soundOk && !unlocking) unlocking = unlockSound().finally(() => unlocking = null); };
+const silent = params.get('sound') === '0';   // ?sound=0: تنبيه ذهبي فقط، والأذان من تطبيق آخر (Al-Azan)
+const tryUnlock = () => { if (!silent && !soundOk && !unlocking) unlocking = unlockSound().finally(() => unlocking = null); };
 for (const ev of ['keydown', 'keyup', 'click', 'pointerdown']) addEventListener(ev, tryUnlock, true);
 
 // تمييز العدد بالعربية: 1 ساعة، 2 ساعتان، 3-10 ساعات، 11+ ساعة؛ الصفر يُحذف
