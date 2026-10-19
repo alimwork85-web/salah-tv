@@ -21,6 +21,12 @@
   .row { display:flex; justify-content:space-between; font-size:4.5vh; padding:1.05vh 1.5vw; border-radius:1.5vh; }
   .row .t, b, .n { direction:ltr; font-variant-numeric:tabular-nums; }
   .row.next { background:var(--accent); color:#06281a; font-weight:700; }
+  /* دخل وقت الصلاة: ذهبي نابض */
+  .row.now { background:linear-gradient(90deg,#c9952e,#ffe29a,#c9952e); color:#2b1d00; font-weight:700; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { filter:brightness(1.2); box-shadow:0 0 3vh rgba(255,200,87,.75); } }
+  #countdown.now { color:#ffe29a; font-size:4vh; }
+  #unlock { position:fixed; bottom:9vh; left:50%; transform:translateX(-50%); background:var(--warm); color:#2b1d00;
+            font-size:3vh; font-weight:700; padding:1.2vh 2.5vw; border-radius:5vh; box-shadow:0 1vh 4vh rgba(0,0,0,.5); }
   .now { display:flex; justify-content:space-between; align-items:center; }
   #icon { font-size:6.5vh; }
   #temp { font-size:8vh; font-weight:700; direction:ltr; }
@@ -74,6 +80,7 @@
   </section>
 </main>
 <footer><span id="countdown"></span><span id="status"></span></footer>
+<div id="unlock" hidden>🔊 اضغط OK لتفعيل صوت الأذان</div>
 <script>
 const LAT = 36.7378, LON = -119.7871;   // Fresno, CA
 const NAMES = { Imsak:'الإمساك', Fajr:'الفجر', Sunrise:'الشروق', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
@@ -104,6 +111,28 @@ function nextPrayer(t, nowMin, withImsak = false) {
   for (const k of order) if (mins(t[k]) > nowMin) return { k, left: mins(t[k]) - nowMin };
   return { k: order[0], left: 1440 - nowMin + mins(t[order[0]]) };
 }
+// الصلاة التي دخل وقتها قبل أقل من WINDOW دقيقة (للتنبيه الذهبي)؛ الإمساك والشروق ليسا صلاة
+const WINDOW = 15;
+function prayerNow(t, nowMin) {
+  for (const k of ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']) { const d = nowMin - mins(t[k]); if (d >= 0 && d < WINDOW) return k; }
+  return null;
+}
+// ?at=HH:MM يبدأ الساعة من وقت معيّن (لمعاينة التنبيه والأذان)
+const at = /^(\d{1,2}):(\d{2})$/.exec(params.get('at') || '');
+const skew = at ? (() => { const d = new Date(); d.setHours(+at[1], +at[2], 0, 0); return d - Date.now(); })() : 0;
+const now = () => new Date(Date.now() + skew);
+
+// الأذان: المتصفح قد يمنع الصوت حتى أول ضغطة زر، فنجرّب بصوت شبه صامت ونطلب ضغطة OK إن رُفض
+const adhan = new Audio('assets/adhan.mp3'); adhan.preload = 'auto';
+let soundOk = false; const played = new Set();
+async function unlockSound() {
+  try { adhan.volume = 0.001; await adhan.play(); adhan.pause(); adhan.currentTime = 0; adhan.volume = 1; soundOk = true; }
+  catch { soundOk = false; }
+  document.getElementById('unlock').hidden = soundOk;
+}
+addEventListener('keydown', () => soundOk || unlockSound());
+addEventListener('click', () => soundOk || unlockSound());
+
 // تمييز العدد بالعربية: 1 ساعة، 2 ساعتان، 3-10 ساعات، 11+ ساعة؛ الصفر يُحذف
 const count = (n, one, two, few) => n === 0 ? '' : n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${one}`;
 // فحص ذاتي صغير
@@ -116,7 +145,9 @@ const count = (n, one, two, few) => n === 0 ? '' : n === 1 ? one : n === 2 ? two
   console.assert(nextPrayer(t, 12 * 60).k === 'Asr', 'dhuhr exactly -> asr');
   console.assert(nextPrayer(t, 20 * 60).k === 'Fajr' && nextPrayer(t, 20 * 60).left === 540, 'after isha');
   console.assert(nextPrayer(t, 0, true).k === 'Imsak' && nextPrayer(t, 0, true).left === 290, 'ramadan: imsak first');
-  console.assert(nextPrayer(t, 20 * 60, true).k === 'Imsak' && nextPrayer(t, 20 * 60, true).left === 530, 'ramadan: after isha -> imsak'); })();
+  console.assert(nextPrayer(t, 20 * 60, true).k === 'Imsak' && nextPrayer(t, 20 * 60, true).left === 530, 'ramadan: after isha -> imsak');
+  console.assert(prayerNow(t, 12 * 60) === 'Dhuhr' && prayerNow(t, 12 * 60 + 14) === 'Dhuhr' && prayerNow(t, 12 * 60 + 15) === null, 'gold window');
+  console.assert(prayerNow(t, 4 * 60 + 50) === null && prayerNow(t, 11 * 60 + 59) === null, 'no gold for imsak / before time'); })();
 
 async function loadPrayers() {
   const d = new Date(), ds = `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
@@ -151,21 +182,29 @@ async function loadWeather() {
   document.getElementById('status').textContent = `آخر تحديث للطقس ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
 }
 function render() {
-  const d = new Date();
+  const d = now();
   let h = d.getHours() % 12 || 12;
   document.getElementById('clock').textContent = `${h}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${d.getHours() < 12 ? 'ص' : 'م'}`;
   // بلا toLocaleDateString: بعض WebView تعيد أرقامًا هندية
   document.getElementById('greg').textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   if (!times) return;
-  const nowMin = d.getHours() * 60 + d.getMinutes(), n = nextPrayer(times, nowMin, ramadan);
+  const nowMin = d.getHours() * 60 + d.getMinutes(), n = nextPrayer(times, nowMin, ramadan), cur = prayerNow(times, nowMin);
   document.getElementById('prayers').innerHTML = shown().map(k =>
-    `<div class="row${k === n.k ? ' next' : ''}"><span>${label(k)}</span><span class="t">${to12(times[k])}</span></div>`).join('');
-  const what = ramadan && n.k === 'Maghrib' ? 'الإفطار' : NAMES[n.k];
-  const hh = count(Math.floor(n.left / 60), 'ساعة', 'ساعتان', 'ساعات'), mm = count(n.left % 60, 'دقيقة', 'دقيقتان', 'دقائق');
-  document.getElementById('countdown').textContent = `باقي على ${what}: ${[hh, mm].filter(Boolean).join(' و') || 'أقل من دقيقة'}`;
+    `<div class="row${k === cur ? ' now' : k === n.k ? ' next' : ''}"><span>${label(k)}</span><span class="t">${to12(times[k])}</span></div>`).join('');
+  const cd = document.getElementById('countdown');
+  cd.classList.toggle('now', !!cur);
+  if (cur) {
+    cd.textContent = ramadan && cur === 'Maghrib' ? 'حان الآن وقت الإفطار · صلاة المغرب' : `حان الآن وقت صلاة ${NAMES[cur]}`;
+    const id = `${d.toDateString()} ${cur}`;   // مرة واحدة لكل صلاة، في دقيقة دخول الوقت فقط
+    if (mins(times[cur]) === nowMin && !played.has(id)) { played.add(id); if (soundOk) { adhan.currentTime = 0; adhan.play().catch(() => {}); } }
+  } else {
+    const what = ramadan && n.k === 'Maghrib' ? 'الإفطار' : NAMES[n.k];
+    const hh = count(Math.floor(n.left / 60), 'ساعة', 'ساعتان', 'ساعات'), mm = count(n.left % 60, 'دقيقة', 'دقيقتان', 'دقائق');
+    cd.textContent = `باقي على ${what}: ${[hh, mm].filter(Boolean).join(' و') || 'أقل من دقيقة'}`;
+  }
 }
 const safe = fn => fn().catch(e => document.getElementById('status').textContent = 'تعذّر التحديث: ' + e.message);
-safe(loadPrayers); safe(loadWeather);
+safe(loadPrayers); safe(loadWeather); unlockSound();
 setInterval(render, 1000);
 setInterval(() => safe(loadWeather), 15 * 60 * 1000);
 let day = new Date().getDate();
