@@ -27,6 +27,7 @@
   #countdown.now { color:#ffe29a; font-size:4vh; }
   #unlock { position:fixed; bottom:9vh; left:50%; transform:translateX(-50%); background:var(--warm); color:#2b1d00;
             font-size:3vh; font-weight:700; padding:1.2vh 2.5vw; border-radius:5vh; box-shadow:0 1vh 4vh rgba(0,0,0,.5); }
+  #unlock[data-why]:not([data-why=""])::after { content:' · ' attr(data-why); font-size:2vh; font-weight:400; direction:ltr; }
   .now { display:flex; justify-content:space-between; align-items:center; }
   #icon { font-size:6.5vh; }
   #temp { font-size:8vh; font-weight:700; direction:ltr; }
@@ -128,12 +129,16 @@ const adhanSrc = k => `assets/adhan/${k.toLowerCase()}.mp3`;
 const adhan = new Audio(adhanSrc('Maghrib')); adhan.preload = 'auto';
 let soundOk = false; const played = new Set();
 async function unlockSound() {
+  let why = '';
   try { adhan.volume = 0.001; await adhan.play(); adhan.pause(); adhan.currentTime = 0; adhan.volume = 1; soundOk = true; }
-  catch { soundOk = false; }
-  document.getElementById('unlock').hidden = soundOk;
+  catch (e) { soundOk = false; why = e.name; }
+  const u = document.getElementById('unlock');
+  u.hidden = soundOk;
+  u.dataset.why = why;   // يظهر سبب الرفض بخط صغير، للتشخيص
 }
-addEventListener('keydown', () => soundOk || unlockSound());
-addEventListener('click', () => soundOk || unlockSound());
+let unlocking = null;   // محاولة واحدة في كل مرة، وإلا ألغت محاولةٌ أختها (AbortError)
+const tryUnlock = () => { if (!soundOk && !unlocking) unlocking = unlockSound().finally(() => unlocking = null); };
+for (const ev of ['keydown', 'keyup', 'click', 'pointerdown']) addEventListener(ev, tryUnlock, true);
 
 // تمييز العدد بالعربية: 1 ساعة، 2 ساعتان، 3-10 ساعات، 11+ ساعة؛ الصفر يُحذف
 const count = (n, one, two, few) => n === 0 ? '' : n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${one}`;
@@ -207,7 +212,7 @@ function render() {
   }
 }
 const safe = fn => fn().catch(e => document.getElementById('status').textContent = 'تعذّر التحديث: ' + e.message);
-safe(loadPrayers); safe(loadWeather); unlockSound();
+safe(loadPrayers); safe(loadWeather); tryUnlock();
 setInterval(render, 1000);
 setInterval(() => safe(loadWeather), 15 * 60 * 1000);
 let day = new Date().getDate();
