@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أوقات الصلاة والطقس</title>
+<style>
+  :root { --bg:#0b1220; --card:rgba(20,29,49,.86); --line:#24304d; --text:#eef2fa; --dim:#8f9bb8; --accent:#3ddc97; --warm:#ffc857; }
+  * { box-sizing:border-box; margin:0; }
+  /* نقش هندسي إسلامي (نجمة ثمانية) مرسوم كـ SVG */
+  body { background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffc857' stroke-opacity='.08' stroke-width='1.5'%3E%3Crect x='30' y='30' width='60' height='60'/%3E%3Crect x='30' y='30' width='60' height='60' transform='rotate(45 60 60)'/%3E%3Ccircle cx='60' cy='60' r='14'/%3E%3Cpath d='M0 0L30 30M120 0L90 30M0 120L30 90M120 120L90 90'/%3E%3C/g%3E%3C/svg%3E");
+         color:var(--text); font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;
+         height:100vh; padding:3vh 5vw; display:grid; grid-template-rows:auto 1fr auto; gap:2vh; overflow:hidden; }
+  header { display:flex; justify-content:space-between; align-items:center; }
+  #clock { font-size:9.5vh; font-weight:700; letter-spacing:.02em; direction:ltr; }
+  #emblem { height:15vh; }
+  #date { font-size:2.9vh; color:var(--dim); text-align:left; line-height:1.6; }
+  main { display:grid; grid-template-columns:1.4fr 1fr; gap:3vw; min-height:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:2.5vh; padding:2.5vh 2.5vw; min-height:0; overflow:hidden; }
+  h2 { font-size:2.8vh; color:var(--dim); font-weight:500; margin-bottom:1vh; }
+  .row { display:flex; justify-content:space-between; font-size:4.5vh; padding:1.05vh 1.5vw; border-radius:1.5vh; }
+  .row .t, b, .n { direction:ltr; font-variant-numeric:tabular-nums; }
+  .row.next { background:var(--accent); color:#06281a; font-weight:700; }
+  .now { display:flex; justify-content:space-between; align-items:center; }
+  #icon { font-size:6.5vh; }
+  #temp { font-size:8vh; font-weight:700; direction:ltr; }
+  #desc { font-size:3vh; margin:0 0 1vh; }
+  .wx { display:flex; justify-content:space-between; font-size:2.8vh; color:var(--dim); padding:.7vh 0; border-top:1px solid var(--line); }
+  .wx b { color:var(--text); font-weight:500; }
+  #days { display:grid; grid-template-columns:repeat(4,1fr); gap:.8vw; margin-top:1.2vh; text-align:center; }
+  .day { background:rgba(255,255,255,.04); border-radius:1.5vh; padding:1.2vh 0; font-size:2.6vh; line-height:1.5; }
+  .day .i { font-size:4.4vh; }
+  .day .r { color:#8cc8ff; font-size:2.4vh; }
+  footer { display:flex; justify-content:space-between; font-size:3.4vh; }
+  #countdown { color:var(--warm); font-weight:600; }
+  #status { color:var(--dim); font-size:2.4vh; }
+  /* المطر: خطوط متحركة خفيفة فوق الشاشة كلها، لا تعترض الضغط */
+  body.raining::after { content:''; position:fixed; inset:0; pointer-events:none;
+    background-image:repeating-linear-gradient(100deg, transparent 0 38px, rgba(150,190,255,.22) 38px 40px);
+    background-size:240px 240px; animation:rain .5s linear infinite; }
+  @keyframes rain { to { background-position:-42px 240px; } }
+</style>
+</head>
+<body>
+<header>
+  <div id="clock">--:--</div>
+  <!-- مسجد وهلال: رسم أصلي -->
+  <svg id="emblem" viewBox="0 0 400 180" aria-hidden="true">
+    <defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe29a"/><stop offset="1" stop-color="#c9952e"/></linearGradient></defs>
+    <g fill="url(#gold)">
+      <path d="M140 120 Q140 55 200 40 Q260 55 260 120 Z"/><rect x="130" y="120" width="140" height="50"/>
+      <rect x="198" y="22" width="4" height="20"/>
+      <path d="M95 135 Q95 105 115 98 Q135 105 135 135 Z"/><rect x="92" y="135" width="46" height="35"/>
+      <path d="M265 135 Q265 105 285 98 Q305 105 305 135 Z"/><rect x="262" y="135" width="46" height="35"/>
+      <rect x="60" y="60" width="14" height="110"/><polygon points="56,60 67,26 78,60"/><rect x="55" y="88" width="24" height="5"/>
+      <rect x="326" y="60" width="14" height="110"/><polygon points="322,60 333,26 344,60"/><rect x="321" y="88" width="24" height="5"/>
+      <rect x="40" y="170" width="320" height="6" rx="3"/>
+    </g>
+    <circle cx="200" cy="13" r="9" fill="url(#gold)"/><circle cx="204" cy="10" r="8" fill="#0b1220"/>
+    <path d="M186 170 V148 Q200 130 214 148 V170 Z" fill="#0b1220"/>
+  </svg>
+  <div id="date">Fresno, CA<br><span id="greg"></span><br><span id="hijri"></span></div>
+</header>
+<main>
+  <section class="card"><h2>أوقات الصلاة اليوم</h2><div id="prayers">جارٍ التحميل…</div></section>
+  <section class="card"><h2>الطقس الآن</h2>
+    <div class="now"><div id="temp">--°</div><div id="icon"></div></div>
+    <div id="desc"></div>
+    <div class="wx"><span>العظمى / الصغرى</span><b id="hilo">--</b></div>
+    <div class="wx"><span>المطر اليوم</span><b id="rain">--</b></div>
+    <div class="wx"><span>الرطوبة</span><b id="hum">--</b></div>
+    <div class="wx"><span>الرياح</span><b id="wind">--</b></div>
+    <div id="days"></div>
+  </section>
+</main>
+<footer><span id="countdown"></span><span id="status"></span></footer>
+<script>
+const LAT = 36.7378, LON = -119.7871;   // Fresno, CA
+const NAMES = { Imsak:'الإمساك', Fajr:'الفجر', Sunrise:'الشروق', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
+const WX = { 0:'صحو', 1:'صحو غالبًا', 2:'غائم جزئيًا', 3:'غائم', 45:'ضباب', 48:'ضباب', 51:'رذاذ خفيف', 53:'رذاذ', 55:'رذاذ كثيف',
+  56:'رذاذ متجمد', 57:'رذاذ متجمد', 61:'مطر خفيف', 63:'مطر', 65:'مطر غزير', 66:'مطر متجمد', 67:'مطر متجمد',
+  71:'ثلج خفيف', 73:'ثلج', 75:'ثلج كثيف', 77:'حبيبات ثلج', 80:'زخات مطر', 81:'زخات مطر', 82:'زخات غزيرة',
+  85:'زخات ثلج', 86:'زخات ثلج', 95:'عاصفة رعدية', 96:'عاصفة وبرد', 99:'عاصفة وبرد' };
+const DAYS = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+let times = null;            // { Fajr:'05:58', ... } بتوقيت المدينة المحلي
+const pad = n => String(n).padStart(2, '0');
+const to12 = hm => { let [h, m] = hm.split(':').map(Number); const s = h < 12 ? 'ص' : 'م'; h = h % 12 || 12; return `${h}:${pad(m)} ${s}`; };
+const mins = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+const isRain = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95;
+const icon = c => c === 0 ? '☀️' : c === 1 ? '🌤️' : c === 2 ? '⛅' : c === 3 ? '☁️' : c <= 48 ? '🌫️' :
+  c >= 95 ? '⛈️' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? '❄️' : c <= 57 || c >= 80 ? '🌦️' : '🌧️';
+
+// رمضان: تلقائيًا في الشهر الهجري 9، أو يُفرض بـ ?ramadan=1 / ?ramadan=0
+const params = new URLSearchParams(location.search);
+const forced = params.get('ramadan');
+let ramadan = forced === '1';
+const label = k => ramadan && k === 'Maghrib' ? 'المغرب · الإفطار' : NAMES[k];
+const shown = () => Object.keys(NAMES).filter(k => ramadan || k !== 'Imsak');
+
+// الموعد التالي (الشروق ليس صلاة) — بعد العشاء يكون أول موعد في الغد
+function nextPrayer(t, nowMin, withImsak = false) {
+  const order = [...(withImsak ? ['Imsak'] : []), 'Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+  for (const k of order) if (mins(t[k]) > nowMin) return { k, left: mins(t[k]) - nowMin };
+  return { k: order[0], left: 1440 - nowMin + mins(t[order[0]]) };
+}
+// تمييز العدد بالعربية: 1 ساعة، 2 ساعتان، 3-10 ساعات، 11+ ساعة؛ الصفر يُحذف
+const count = (n, one, two, few) => n === 0 ? '' : n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${one}`;
+// فحص ذاتي صغير
+(() => {
+  console.assert(count(1, 'ساعة', 'ساعتان', 'ساعات') === 'ساعة' && count(3, 'ساعة', 'ساعتان', 'ساعات') === '3 ساعات' && count(15, 'دقيقة', 'دقيقتان', 'دقائق') === '15 دقيقة', 'count');
+  console.assert(isRain(61) && isRain(81) && isRain(95) && !isRain(3) && !isRain(71), 'isRain');
+  console.assert(icon(0) === '☀️' && icon(63) === '🌧️' && icon(73) === '❄️' && icon(95) === '⛈️', 'icon');
+  const t = { Imsak:'04:50', Fajr:'05:00', Dhuhr:'12:00', Asr:'15:30', Maghrib:'18:10', Isha:'19:30' };
+  console.assert(nextPrayer(t, 0).k === 'Fajr' && nextPrayer(t, 0).left === 300, 'fajr');
+  console.assert(nextPrayer(t, 12 * 60).k === 'Asr', 'dhuhr exactly -> asr');
+  console.assert(nextPrayer(t, 20 * 60).k === 'Fajr' && nextPrayer(t, 20 * 60).left === 540, 'after isha');
+  console.assert(nextPrayer(t, 0, true).k === 'Imsak' && nextPrayer(t, 0, true).left === 290, 'ramadan: imsak first');
+  console.assert(nextPrayer(t, 20 * 60, true).k === 'Imsak' && nextPrayer(t, 20 * 60, true).left === 530, 'ramadan: after isha -> imsak'); })();
+
+async function loadPrayers() {
+  const d = new Date(), ds = `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+  const r = await fetch(`https://api.aladhan.com/v1/timings/${ds}?latitude=${LAT}&longitude=${LON}&method=2`);
+  const j = (await r.json()).data;
+  times = Object.fromEntries(Object.keys(NAMES).map(k => [k, j.timings[k].slice(0, 5)]));
+  const h = j.date.hijri;
+  document.getElementById('hijri').textContent = `${h.day} ${h.month.ar} ${h.year} هـ`;
+  if (forced === null) ramadan = h.month.number === 9;
+  render();
+}
+async function loadWeather() {
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+    `&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum` +
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=5`);
+  const j = await r.json(), c = j.current, dl = j.daily, f = Math.round;
+  const code = params.get('rain') === '1' ? 63 : c.weather_code;   // ?rain=1 لمعاينة شكل المطر
+  const wet = isRain(code) || c.precipitation > 0;
+  document.body.classList.toggle('raining', wet);
+  document.getElementById('icon').textContent = icon(code);
+  document.getElementById('temp').textContent = `${f(c.temperature_2m)}°F`;
+  document.getElementById('desc').textContent = (WX[code] ?? '') + (wet ? ' · يمطر الآن' + (c.precipitation > 0 ? ` ⁦${c.precipitation.toFixed(2)} in⁩` : '') : '');
+  document.getElementById('hilo').textContent = `${f(dl.temperature_2m_max[0])}° / ${f(dl.temperature_2m_min[0])}°`;
+  document.getElementById('rain').textContent = `${dl.precipitation_probability_max[0] ?? 0}% · ${dl.precipitation_sum[0].toFixed(2)} in`;
+  document.getElementById('hum').textContent = `${c.relative_humidity_2m}%`;
+  document.getElementById('wind').textContent = `${f(c.wind_speed_10m)} mph`;
+  document.getElementById('days').innerHTML = dl.time.slice(1, 5).map((t, k) => { const i = k + 1;
+    return `<div class="day"><div>${DAYS[new Date(t + 'T12:00').getDay()]}</div><div class="i">${icon(dl.weather_code[i])}</div>` +
+      `<div class="n">${f(dl.temperature_2m_max[i])}° / ${f(dl.temperature_2m_min[i])}°</div>` +
+      `<div class="r n">💧 ${dl.precipitation_probability_max[i] ?? 0}%</div></div>`; }).join('');
+  document.getElementById('status').textContent = `آخر تحديث للطقس ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
+}
+function render() {
+  const d = new Date();
+  let h = d.getHours() % 12 || 12;
+  document.getElementById('clock').textContent = `${h}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${d.getHours() < 12 ? 'ص' : 'م'}`;
+  // بلا toLocaleDateString: بعض WebView تعيد أرقامًا هندية
+  document.getElementById('greg').textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  if (!times) return;
+  const nowMin = d.getHours() * 60 + d.getMinutes(), n = nextPrayer(times, nowMin, ramadan);
+  document.getElementById('prayers').innerHTML = shown().map(k =>
+    `<div class="row${k === n.k ? ' next' : ''}"><span>${label(k)}</span><span class="t">${to12(times[k])}</span></div>`).join('');
+  const what = ramadan && n.k === 'Maghrib' ? 'الإفطار' : NAMES[n.k];
+  const hh = count(Math.floor(n.left / 60), 'ساعة', 'ساعتان', 'ساعات'), mm = count(n.left % 60, 'دقيقة', 'دقيقتان', 'دقائق');
+  document.getElementById('countdown').textContent = `باقي على ${what}: ${[hh, mm].filter(Boolean).join(' و') || 'أقل من دقيقة'}`;
+}
+const safe = fn => fn().catch(e => document.getElementById('status').textContent = 'تعذّر التحديث: ' + e.message);
+safe(loadPrayers); safe(loadWeather);
+setInterval(render, 1000);
+setInterval(() => safe(loadWeather), 15 * 60 * 1000);
+let day = new Date().getDate();
+setInterval(() => { if (new Date().getDate() !== day) { day = new Date().getDate(); safe(loadPrayers); } }, 60 * 1000);
+</script>
+</body>
+</html>

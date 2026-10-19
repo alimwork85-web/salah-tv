@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/><stop offset="1" stop-color="#16244a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="24" fill="url(#bg)"/>
+  <!-- crescent -->
+  <circle cx="1040" cy="150" r="78" fill="#ffc857"/>
+  <circle cx="1072" cy="128" r="70" fill="#121d3a"/>
+  <circle cx="985" cy="92" r="5" fill="#eef2fa"/><circle cx="1110" cy="225" r="4" fill="#eef2fa"/><circle cx="950" cy="210" r="3" fill="#eef2fa"/>
+  <text x="80" y="135" font-family="Segoe UI, Tahoma, sans-serif" font-size="68" font-weight="700" fill="#eef2fa">Salah TV</text>
+  <text x="80" y="190" font-family="Segoe UI, Tahoma, sans-serif" font-size="30" fill="#8f9bb8">Prayer times · Imsak &amp; Iftar · Weather — for Fire TV &amp; Android TV</text>
+  <rect x="80" y="220" width="210" height="40" rx="20" fill="#3ddc97"/>
+  <text x="185" y="247" text-anchor="middle" font-family="Segoe UI, Tahoma, sans-serif" font-size="20" font-weight="700" fill="#06281a">أوقات الصلاة والطقس</text>
+</svg>
